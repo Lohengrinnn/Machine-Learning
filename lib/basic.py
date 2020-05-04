@@ -88,11 +88,45 @@ def information_gain(h0, splits):
         e += (len(split) * entropy(class_distribution(split)) / total)
     return h0 - e
 
-def assert_in_delta(a, b, delta):
-    assert(abs(a - b) < delta)
+def assert_in_delta(a, b, delta, description = None):
+    if not abs(a - b) < delta:
+        if description: print(description)
+        assert(False)
 
 def assert_equal(val, expect):
     assert(val == expect)
+
+class Metric:
+    def apply(self, scores):
+        pass
+
+class AUCMetric(Metric):
+    def roc_curve(self, scores):
+        # scores = [[score, label]]
+        # BEGIN YOUR CODE
+        auc = 0.0
+        tp_rates = [0.0]
+        fp_rates = [0.0]
+        tp_i = 0
+        fp_i = 0
+        p_total = sum(1 if label > 0 else 0 for score, label in scores)
+        f_total = len(scores) - p_total
+        for score, label in sorted(scores, key=lambda row: -row[0]):
+            if label > 0:
+                tp_i += 1
+            else:
+                fp_i += 1
+
+            tp_rates.append(tp_i / p_total)
+            fp_rates.append(fp_i / f_total)
+            auc += ((fp_rates[-1] - fp_rates[-2]) * (tp_rates[-1] + tp_rates[-2]) / 2)
+
+        return [fp_rates, tp_rates, auc]
+
+    def apply(self, scores):
+        fp, tp, auc = self.roc_curve(scores)
+        return auc
+
 
 if __name__ == "__main__":
     import doctest
